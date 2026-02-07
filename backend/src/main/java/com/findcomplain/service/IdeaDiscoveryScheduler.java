@@ -7,8 +7,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
 @RequiredArgsConstructor
@@ -17,8 +17,8 @@ public class IdeaDiscoveryScheduler {
 
     private final AppIdeaService appIdeaService;
 
-    // 아이디어 발굴 대상 서브레딧
-    private static final List<String> TARGET_SUBREDDITS = Arrays.asList(
+    // 디폴트 서브레딧 (삭제 불가)
+    private static final List<String> DEFAULT_SUBREDDITS = List.of(
             "SomebodyMakeThis",
             "AppIdeas",
             "mildlyinfuriating",
@@ -28,6 +28,9 @@ public class IdeaDiscoveryScheduler {
             "SideProject",
             "indiehackers"
     );
+
+    // 사용자가 추가한 커스텀 서브레딧
+    private final List<String> customSubreddits = new CopyOnWriteArrayList<>();
 
     // 매일 오전 9시에 실행 (cron = "초 분 시 일 월 요일")
     @Scheduled(cron = "0 0 9 * * *")
@@ -44,7 +47,7 @@ public class IdeaDiscoveryScheduler {
     private int runDiscovery(int postsPerSubreddit) {
         int totalIdeas = 0;
 
-        for (String subreddit : TARGET_SUBREDDITS) {
+        for (String subreddit : getTargetSubreddits()) {
             try {
                 log.info("Scanning r/{} for app ideas...", subreddit);
                 List<AppIdea> ideas = appIdeaService.analyzeSubreddit(subreddit, postsPerSubreddit);
@@ -63,6 +66,40 @@ public class IdeaDiscoveryScheduler {
     }
 
     public List<String> getTargetSubreddits() {
-        return TARGET_SUBREDDITS;
+        List<String> all = new ArrayList<>(DEFAULT_SUBREDDITS);
+        all.addAll(customSubreddits);
+        return all;
+    }
+
+    public List<String> getDefaultSubreddits() {
+        return DEFAULT_SUBREDDITS;
+    }
+
+    public List<String> getCustomSubreddits() {
+        return List.copyOf(customSubreddits);
+    }
+
+    public String addCustomSubreddit(String subreddit) {
+        String name = subreddit.trim();
+        if (name.isEmpty()) {
+            throw new IllegalArgumentException("Subreddit name cannot be empty");
+        }
+        // 이미 존재하는지 확인 (디폴트 + 커스텀)
+        boolean exists = getTargetSubreddits().stream()
+                .anyMatch(s -> s.equalsIgnoreCase(name));
+        if (exists) {
+            throw new IllegalArgumentException("Subreddit '" + name + "' already exists");
+        }
+        customSubreddits.add(name);
+        log.info("Added custom subreddit: r/{}", name);
+        return name;
+    }
+
+    public void removeCustomSubreddit(String subreddit) {
+        boolean removed = customSubreddits.removeIf(s -> s.equalsIgnoreCase(subreddit.trim()));
+        if (!removed) {
+            throw new IllegalArgumentException("Subreddit '" + subreddit + "' is not a custom subreddit");
+        }
+        log.info("Removed custom subreddit: r/{}", subreddit);
     }
 }

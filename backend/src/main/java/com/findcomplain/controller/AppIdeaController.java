@@ -66,7 +66,36 @@ public class AppIdeaController {
 
     @GetMapping("/subreddits")
     @Operation(summary = "Get list of target subreddits")
-    public ResponseEntity<List<String>> getTargetSubreddits() {
-        return ResponseEntity.ok(scheduler.getTargetSubreddits());
+    public ResponseEntity<Map<String, Object>> getTargetSubreddits() {
+        return ResponseEntity.ok(Map.of(
+                "defaults", scheduler.getDefaultSubreddits(),
+                "custom", scheduler.getCustomSubreddits(),
+                "all", scheduler.getTargetSubreddits()
+        ));
+    }
+
+    @PostMapping("/subreddits")
+    @Operation(summary = "Add a custom subreddit")
+    public ResponseEntity<Map<String, Object>> addCustomSubreddit(@RequestBody Map<String, String> body) {
+        String subreddit = body.get("subreddit");
+        String added = scheduler.addCustomSubreddit(subreddit);
+        return ResponseEntity.ok(Map.of(
+                "message", "Added r/" + added,
+                "defaults", scheduler.getDefaultSubreddits(),
+                "custom", scheduler.getCustomSubreddits(),
+                "all", scheduler.getTargetSubreddits()
+        ));
+    }
+
+    @DeleteMapping("/subreddits/{subreddit}")
+    @Operation(summary = "Remove a custom subreddit")
+    public ResponseEntity<Map<String, Object>> removeCustomSubreddit(@PathVariable String subreddit) {
+        scheduler.removeCustomSubreddit(subreddit);
+        return ResponseEntity.ok(Map.of(
+                "message", "Removed r/" + subreddit,
+                "defaults", scheduler.getDefaultSubreddits(),
+                "custom", scheduler.getCustomSubreddits(),
+                "all", scheduler.getTargetSubreddits()
+        ));
     }
 }

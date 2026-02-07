@@ -27,6 +27,12 @@ export const appIdeaApi = {
   analyzeSubreddit: (subreddit: string, limit?: number): Promise<AppIdea[]> =>
     api.post(`/app-ideas/analyze/${subreddit}?limit=${limit || 20}`).then(res => res.data),
 
-  getTargetSubreddits: (): Promise<string[]> =>
+  getTargetSubreddits: (): Promise<{ defaults: string[]; custom: string[]; all: string[] }> =>
     api.get('/app-ideas/subreddits').then(res => res.data),
+
+  addCustomSubreddit: (subreddit: string): Promise<{ defaults: string[]; custom: string[]; all: string[] }> =>
+    api.post('/app-ideas/subreddits', { subreddit }).then(res => res.data),
+
+  removeCustomSubreddit: (subreddit: string): Promise<{ defaults: string[]; custom: string[]; all: string[] }> =>
+    api.delete(`/app-ideas/subreddits/${subreddit}`).then(res => res.data),
 }

@@ -13,7 +13,10 @@ export default function AppIdeaList() {
   const [loading, setLoading] = useState(true)
   const [discovering, setDiscovering] = useState(false)
   const [filter, setFilter] = useState<'all' | 'bookmarked'>('all')
-  const [subreddits, setSubreddits] = useState<string[]>([])
+  const [defaultSubreddits, setDefaultSubreddits] = useState<string[]>([])
+  const [customSubreddits, setCustomSubreddits] = useState<string[]>([])
+  const [newSubreddit, setNewSubreddit] = useState('')
+  const [addingSubreddit, setAddingSubreddit] = useState(false)
 
   useEffect(() => {
     fetchIdeas()
@@ -37,9 +40,36 @@ export default function AppIdeaList() {
   const fetchSubreddits = async () => {
     try {
       const data = await appIdeaApi.getTargetSubreddits()
-      setSubreddits(data)
+      setDefaultSubreddits(data.defaults)
+      setCustomSubreddits(data.custom)
     } catch (err) {
       console.error('Failed to fetch subreddits', err)
+    }
+  }
+
+  const handleAddSubreddit = async () => {
+    const name = newSubreddit.trim()
+    if (!name) return
+    setAddingSubreddit(true)
+    try {
+      const data = await appIdeaApi.addCustomSubreddit(name)
+      setDefaultSubreddits(data.defaults)
+      setCustomSubreddits(data.custom)
+      setNewSubreddit('')
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to add subreddit')
+    } finally {
+      setAddingSubreddit(false)
+    }
+  }
+
+  const handleRemoveSubreddit = async (subreddit: string) => {
+    try {
+      const data = await appIdeaApi.removeCustomSubreddit(subreddit)
+      setDefaultSubreddits(data.defaults)
+      setCustomSubreddits(data.custom)
+    } catch (err) {
+      console.error('Failed to remove subreddit', err)
     }
   }
 
@@ -83,12 +113,9 @@ export default function AppIdeaList() {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
           <div>
             <h2 className="text-xl font-bold text-gray-900">App Idea Discovery</h2>
-            <p className="text-gray-600 text-sm mt-1">
-              Scanning: {subreddits.join(', ')}
-            </p>
           </div>
           <div className="flex gap-3">
             <div className="flex rounded-lg overflow-hidden border">
@@ -123,6 +150,54 @@ export default function AppIdeaList() {
                   Discover Now
                 </>
               )}
+            </button>
+          </div>
+        </div>
+
+        {/* Subreddit Management */}
+        <div className="border-t pt-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Scanning Subreddits</h3>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {defaultSubreddits.map((sub) => (
+              <span
+                key={sub}
+                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+              >
+                r/{sub}
+              </span>
+            ))}
+            {customSubreddits.map((sub) => (
+              <span
+                key={sub}
+                className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800"
+              >
+                r/{sub}
+                <button
+                  onClick={() => handleRemoveSubreddit(sub)}
+                  className="ml-1 hover:text-red-600"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newSubreddit}
+              onChange={(e) => setNewSubreddit(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddSubreddit()}
+              placeholder="Add subreddit name..."
+              className="flex-1 max-w-xs px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+            <button
+              onClick={handleAddSubreddit}
+              disabled={addingSubreddit || !newSubreddit.trim()}
+              className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 disabled:bg-gray-300"
+            >
+              + Add
             </button>
           </div>
         </div>
