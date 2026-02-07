@@ -84,7 +84,6 @@ public class IdeaDiscoveryScheduler {
         if (name.isEmpty()) {
             throw new IllegalArgumentException("Subreddit name cannot be empty");
         }
-        // 이미 존재하는지 확인 (디폴트 + 커스텀)
         boolean exists = getTargetSubreddits().stream()
                 .anyMatch(s -> s.equalsIgnoreCase(name));
         if (exists) {
@@ -96,10 +95,11 @@ public class IdeaDiscoveryScheduler {
     }
 
     public void removeCustomSubreddit(String subreddit) {
-        boolean removed = customSubreddits.removeIf(s -> s.equalsIgnoreCase(subreddit.trim()));
+        String name = subreddit.trim();
+        boolean removed = customSubreddits.removeIf(s -> s.equalsIgnoreCase(name));
         if (!removed) {
-            throw new IllegalArgumentException("Subreddit '" + subreddit + "' is not a custom subreddit");
+            throw new IllegalArgumentException("Subreddit '" + name + "' is not a custom subreddit");
         }
-        log.info("Removed custom subreddit: r/{}", subreddit);
+        log.info("Removed custom subreddit: r/{}", name);
     }
 }

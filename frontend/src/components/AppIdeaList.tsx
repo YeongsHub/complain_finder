@@ -173,8 +173,9 @@ export default function AppIdeaList() {
               >
                 r/{sub}
                 <button
-                  onClick={() => handleRemoveSubreddit(sub)}
-                  className="ml-1 hover:text-red-600"
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handleRemoveSubreddit(sub); }}
+                  className="ml-1 p-0.5 rounded-full hover:bg-purple-200 hover:text-red-600 cursor-pointer"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
