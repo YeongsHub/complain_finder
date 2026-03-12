@@ -8,6 +8,8 @@ const DIFFICULTY_STYLES = {
   hard: 'bg-red-100 text-red-800',
 }
 
+const PAGE_SIZE = 10
+
 export default function AppIdeaList() {
   const [ideas, setIdeas] = useState<AppIdea[]>([])
   const [loading, setLoading] = useState(true)
@@ -17,11 +19,19 @@ export default function AppIdeaList() {
   const [customSubreddits, setCustomSubreddits] = useState<string[]>([])
   const [newSubreddit, setNewSubreddit] = useState('')
   const [addingSubreddit, setAddingSubreddit] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const totalPages = Math.ceil(ideas.length / PAGE_SIZE)
+  const paginatedIdeas = ideas.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   useEffect(() => {
     fetchIdeas()
     fetchSubreddits()
   }, [filter])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filter, ideas.length])
 
   const fetchIdeas = async () => {
     setLoading(true)
@@ -214,8 +224,9 @@ export default function AppIdeaList() {
           No app ideas found. Click "Discover Now" to scan subreddits!
         </div>
       ) : (
+        <>
         <div className="grid grid-cols-1 gap-6">
-          {ideas.map((idea) => (
+          {paginatedIdeas.map((idea) => (
             <div
               key={idea.id}
               className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
@@ -296,6 +307,34 @@ export default function AppIdeaList() {
             </div>
           ))}
         </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-6">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-2 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-100"
+            >
+              이전
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`px-3 py-2 rounded-lg border text-sm ${currentPage === page ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-gray-100'}`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-2 rounded-lg border text-sm disabled:opacity-40 hover:bg-gray-100"
+            >
+              다음
+            </button>
+          </div>
+        )}
+        </>
       )}
     </div>
   )

@@ -11,6 +11,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
@@ -23,17 +24,24 @@ public class RedditCrawlerService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public List<RedditPost> fetchPosts(String subreddit, List<String> keywords, int limit) {
+        List<RedditPost> posts;
+
         if (config.isMockMode()) {
             log.info("Using mock mode for Reddit API");
-            return generateMockPosts(subreddit, limit);
+            posts = generateMockPosts(subreddit, limit);
+        } else {
+            try {
+                posts = fetchPublicJsonApi(subreddit, limit);
+            } catch (Exception e) {
+                log.error("Failed to fetch from Reddit API, falling back to mock data", e);
+                posts = generateMockPosts(subreddit, limit);
+            }
         }
 
-        try {
-            return fetchPublicJsonApi(subreddit, limit);
-        } catch (Exception e) {
-            log.error("Failed to fetch from Reddit API, falling back to mock data", e);
-            return generateMockPosts(subreddit, limit);
-        }
+        return posts.stream()
+                .sorted(Comparator.comparingInt(RedditPost::getScore).reversed())
+                .limit(5)
+                .toList();
     }
 
     private List<RedditPost> fetchPublicJsonApi(String subreddit, int limit) {
